@@ -1,0 +1,16 @@
+# Secrets
+.env
+*.env
+!*.env.example
+secrets/*
+!secrets/.gitkeep
+
+# Logs
+logs/
+*.log
+*.pid
+*.sock
+
+# Python
+__pycache__/
+*.pyc
