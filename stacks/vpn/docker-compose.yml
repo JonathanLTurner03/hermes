@@ -10,6 +10,7 @@ services:
       - ${GLUETUN_HTTP_PROXY_PORT}:8888/tcp
       - ${GLUETUN_SHADOWSOCKS_PORT}:8388/tcp
       - ${GLUETUN_SHADOWSOCKS_PORT}:8388/udp
+      - ${GLUETUN_CONTROL_PORT}:${GLUETUN_CONTROL_PORT}/tcp
       - ${PYLOAD_PORT}:${PYLOAD_PORT}/tcp
     volumes:
       - gluetun_data:/gluetun
@@ -19,6 +20,7 @@ services:
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
       - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
       - WIREGUARD_PRESHARED_KEY=${WIREGUARD_PRESHARED_KEY}
+      - HTTP_CONTROL_SERVER_ADDRESS=:${GLUETUN_CONTROL_PORT}
       - TZ=${TZ}
     restart: "no"       # supervisord handles restart policy
 
