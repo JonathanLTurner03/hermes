@@ -43,6 +43,9 @@ def main():
         fields    = parse_payload(payload)
         process   = fields.get("processname", "")
 
+
+        print(f"[debug] event={eventname} process={process} payload={payload}", file=sys.stderr)
+
         if eventname == "PROCESS_STATE_RUNNING":
             if process in CRITICAL:
                 print(f"[dep:critical] {process} RUNNING — starting {CRITICAL[process]}", file=sys.stderr)

@@ -7,9 +7,10 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     ports:
-      - 8888:8888/tcp   # HTTP proxy
-      - 8388:8388/tcp   # Shadowsocks
-      - 8388:8388/udp
+      - ${GLUETUN_HTTP_PROXY_PORT}:8888/tcp
+      - ${GLUETUN_SHADOWSOCKS_PORT}:8388/tcp
+      - ${GLUETUN_SHADOWSOCKS_PORT}:8388/udp
+      - ${PYLOAD_PORT}:${PYLOAD_PORT}/tcp
     volumes:
       - gluetun_data:/gluetun
     environment:
@@ -32,6 +33,7 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+      - WEB_PORT=${PYLOAD_PORT}
     restart: "no"       # supervisord handles restart policy
 
 volumes:
