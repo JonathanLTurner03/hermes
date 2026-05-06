@@ -11,7 +11,7 @@ services:
       - ${GLUETUN_SHADOWSOCKS_PORT}:8388/tcp
       - ${GLUETUN_SHADOWSOCKS_PORT}:8388/udp
       - ${GLUETUN_CONTROL_PORT}:${GLUETUN_CONTROL_PORT}/tcp
-      - ${PYLOAD_PORT}:${PYLOAD_PORT}/tcp
+      - ${PYLOAD_PORT}:8000/tcp
     volumes:
       - gluetun_data:/gluetun
     environment:
@@ -35,7 +35,6 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - WEB_PORT=${PYLOAD_PORT}
     restart: "no"       # supervisord handles restart policy
 
 volumes:

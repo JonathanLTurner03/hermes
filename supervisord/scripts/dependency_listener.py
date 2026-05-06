@@ -3,6 +3,7 @@
 
 import sys
 import subprocess
+import time
 from supervisor.childutils import listener
 
 # ── Dependency graph ──────────────────────────────────────────────────────────
@@ -15,7 +16,10 @@ from supervisor.childutils import listener
 #           mid-session restarts of upstream are ignored
 #
 CRITICAL = {
-    "gluetun": ["pyload"],
+    "gluetun": {
+        "deps": ["pyload"],
+	    "start_delay": 10,
+        },
 }
 
 SOFT = {
@@ -48,8 +52,12 @@ def main():
 
         if eventname == "PROCESS_STATE_RUNNING":
             if process in CRITICAL:
-                print(f"[dep:critical] {process} RUNNING — starting {CRITICAL[process]}", file=sys.stderr)
-                for dep in CRITICAL[process]:
+                delay = CRITICAL[process].get("start_delay", 0)
+                deps = CRITICAL[process]["deps"]
+                if delay:
+                    print(f"[dep:critical] {process} RUNNING — waiting {delay}s before starting {deps}", file=sys.stderr)
+                    time.sleep(delay)
+                for dep in deps:
                     supervisorctl("start", dep)
 
             if process in SOFT:
@@ -59,8 +67,10 @@ def main():
 
         elif eventname in DOWN_EVENTS:
             if process in CRITICAL:
+                deps = CRITICAL[process]["deps"]
                 print(f"[dep:critical] {process} {eventname} — stopping {CRITICAL[process]}", file=sys.stderr)
                 for dep in CRITICAL[process]:
+                    time.sleep(2)
                     supervisorctl("stop", dep)
 
         listener.ok(sys.stdout)
