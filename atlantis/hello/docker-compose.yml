@@ -1,0 +1,5 @@
+services:
+  hello:
+    image: traefik/whoami
+    ports:
+      - "8099:80"
