@@ -1,5 +1,0 @@
-name: hc-test
-source: /tmp/hc-test-src
-target: /tmp/hc-test-dst
-type: bind
-description: "Throwaway bind mount for smoke-testing hc mount end-to-end"
