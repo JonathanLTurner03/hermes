@@ -1,0 +1,6 @@
+# Throwaway service for exercising hc update's version-pinned upgrade flow
+services:
+  nginx-test:
+    image: nginx:1.31.5
+    ports:
+      - "8098:80"
