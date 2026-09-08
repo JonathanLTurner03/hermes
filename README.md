@@ -1,5 +1,8 @@
 # hermes — Fleet Configuration Registry
 
+> [!WARNING]
+> **Personal project — use at your own risk.** Same disclaimer as [hermes-cli](../hermes-cli): a side project built to save myself time on my own homelab, not a maintained tool for general use. Heavily AI-assisted development, no unit tests, no CI, tested only against my own setup. Read before you run it against anything you care about.
+
 This repo is the source of truth for what runs on each host in the fleet: Docker Compose services and systemd mounts. Hosts don't carry their own config — they pull it from here via [`hc`](../hermes-cli) (the Hermes CLI) and apply it locally.
 
 If you're looking for `hc`'s own command reference (`hc up`, `hc mount sync`, etc.), see the hermes-cli repo's README. This one covers how *this* repo is structured and how to add things to it.
