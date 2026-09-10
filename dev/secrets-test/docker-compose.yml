@@ -1,0 +1,10 @@
+services:
+  secrets-test:
+    image: traefik/whoami
+    ports:
+      - "8097:80"
+    secrets:
+      - api_key
+secrets:
+  api_key:
+    file: ./secrets/api_key

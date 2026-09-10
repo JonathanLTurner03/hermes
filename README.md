@@ -11,6 +11,7 @@ If you're looking for `hc`'s own command reference (`hc up`, `hc mount sync`, et
 
 ```
 hermes/
+├── .sops.yaml                       # age recipient rules for *.enc.yaml, matched by path
 └── <server>/                        # one directory per host, name matches `hc init <server>`
     ├── .env                         # optional, host-wide compose env (tracked)
     ├── .env.secrets                 # optional, host-wide secrets (NOT tracked — see below)
@@ -18,7 +19,9 @@ hermes/
     ├── <service>/
     │   ├── docker-compose.yml       # required
     │   ├── .env                     # optional, service-specific (tracked)
-    │   └── .env.secrets             # optional, service-specific secrets (NOT tracked)
+    │   ├── .env.secrets             # optional, service-specific secrets (NOT tracked)
+    │   ├── secrets.enc.yaml         # optional, sops+age encrypted secrets (tracked — see below)
+    │   └── secrets/                 # decrypted output of secrets.enc.yaml (NOT tracked)
     └── mounts/
         └── <name>.yml               # optional, one systemd mount spec per file
 ```
@@ -35,7 +38,9 @@ hermes/
        external: true
    ```
    `hc up` creates it automatically (`docker network create`) if it doesn't exist yet — you don't need to pre-create it anywhere.
-3. If the service needs secrets, reference `.env.secrets` as an `env_file:` in the compose file. **Never commit `.env.secrets`** — it's gitignored on purpose (see `.gitignore`). Get it onto the host out of band (scp, a secrets manager, whatever your process is) before starting the service — `hc up` refuses to start a service that declares `.env.secrets` but has none present on disk, rather than silently starting without it.
+3. If the service needs secrets, either:
+   - Reference `.env.secrets` as an `env_file:` in the compose file. **Never commit `.env.secrets`** — it's gitignored on purpose (see `.gitignore`). Get it onto the host out of band (scp, a secrets manager, whatever your process is) before starting the service — `hc up` refuses to start a service that declares `.env.secrets` but has none present on disk, rather than silently starting without it.
+   - Or, if the secret should be tracked (encrypted) in this repo instead of distributed out of band, use a `secrets.enc.yaml` — see "Adding per-service secrets" below.
 4. On the host: `hc pull && hc up <new-service>`.
 
 ## Adding a mount
@@ -84,6 +89,69 @@ To remove a mount: `hc mount disable <name>` on the host **first**, then delete 
 Docker on each host is wired to wait for every mount registered for it before starting, via a drop-in `hc mount sync` regenerates on every run. If that drop-in changes, `hc` will say so and tell you to re-run with `--restart-docker` to actually apply it — that bounces every container on the host, so it's never automatic.
 
 See `mount-feature-doc.md` in the hermes-cli repo for the full design rationale behind these decisions (why the pool is excluded, how dependency ordering and the staleness check work, open questions considered during design).
+
+## Adding per-service secrets
+
+Use this instead of (or alongside) `.env.secrets` when a secret should be
+tracked, encrypted, in this repo — versioned and diffable like everything
+else in the fleet — rather than distributed to each host out of band.
+Encryption is per-file via [sops](https://github.com/getsops/sops) backed
+by [age](https://github.com/FiloSottile/age); scoping which host(s) can
+decrypt which file is entirely `.sops.yaml`'s job (age public keys are not
+secret — only the matching private key is).
+
+**One-time, per host that needs to decrypt anything:**
+
+```
+age-keygen -o ~/.config/sops/age/keys.txt
+```
+
+This prints the host's public key (`age1...`) and writes the private key
+into that file (`chmod 600` automatically). The private key never leaves
+the host it was generated on — only the public key gets pasted into
+`.sops.yaml` and committed.
+
+**Adding a secret to a service:**
+
+1. Add an `age:` entry for every host (and/or your own desktop, if you want
+   to keep editing secrets from there) that should be able to decrypt this
+   service's secrets to `.sops.yaml`, e.g.:
+   ```yaml
+   creation_rules:
+     - path_regex: jellyfin/secrets\.enc\.yaml$
+       age: age1qy8f...atlantis_pubkey,age1zx9c...desktop_pubkey
+   ```
+2. `sops <server>/<service>/secrets.enc.yaml` — opens `$EDITOR` on the
+   decrypted plaintext (creates the file if it doesn't exist yet) and
+   re-encrypts on save. Keys stay in plaintext in the encrypted file too —
+   `git diff` shows which secret *changed*, never its value. Each top-level
+   key becomes one decrypted file later, so keep values flat strings/numbers,
+   not nested structures. `hc secrets edit <service>` on a host is a
+   shorthand for this same command.
+3. Reference it from the compose file as a file-based Docker secret, not an
+   env var — `hc` decrypts to `<service>/secrets/<name>` (gitignored) at
+   deploy time, and Compose resolves the relative path against the compose
+   file's own directory:
+   ```yaml
+   services:
+     jellyfin:
+       secrets:
+         - jellyfin_api_key
+   secrets:
+     jellyfin_api_key:
+       file: ./secrets/api_key   # <service>/secrets/<name> — name is the key from secrets.enc.yaml
+   ```
+   The container sees it at `/run/secrets/jellyfin_api_key`, never in its
+   environment or `docker inspect` output. If the app only reads config
+   from env vars, bridge it in the entrypoint: `export API_KEY=$(cat
+   /run/secrets/jellyfin_api_key)`.
+4. Commit and push. `hc up`/`hc update` decrypt fresh (via the host's own
+   age key) every run — nothing else to do on the host beyond `hc pull`.
+
+To rotate or edit an existing secret: `sops <server>/<service>/secrets.enc.yaml`
+(or `hc secrets edit <service>` on a host), change the value, save, commit,
+push, `hc pull && hc up <service>` (or `hc secrets sync <service>` to
+re-decrypt without touching the running container).
 
 ## Workflow summary
 

@@ -1,0 +1,26 @@
+# sops recipient rules for this registry's *.enc.yaml files.
+#
+# Matched top-down, first match wins — put more specific paths above the
+# catch-all. `age` values are comma-separated public keys (age1...), one
+# per host/person allowed to decrypt that path. Only public keys belong
+# here; the matching private key never leaves the host (or person) it was
+# generated for. See CLAUDE.md's "Adding per-service secrets" section for
+# the full workflow (age-keygen, sops <path> to edit, hc secrets sync).
+#
+# Replace the placeholder keys below with real `age-keygen -y` output as
+# each host/person is onboarded. A path with no matching rule here can't be
+# encrypted (sops refuses) or decrypted by anyone, so every service that
+# has a secrets.enc.yaml needs a rule covering it.
+creation_rules:
+  # dev/ is the disposable fixture host used to exercise hc locally (see
+  # CLAUDE.md's "Test/scratch hosts" note) — this key belongs to the WSL
+  # instance used for that testing, not a real host.
+  - path_regex: dev/secrets-test/secrets\.enc\.yaml$
+    age: age19ptepy2mt9rnsfxft497qc79yq40lhg6qq75nc30v0e0kryde4ys95n4m3
+
+  # Catch-all: whichever key(s) should be able to decrypt anything not
+  # matched above (typically just the desktop/dev-machine key, so every
+  # secrets.enc.yaml stays editable from one place even before a specific
+  # rule for it is added). Replace with your desktop's real age public key.
+  - path_regex: .*\.enc\.yaml$
+    age: age1exampledesktoppublickey...
