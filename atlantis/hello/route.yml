@@ -1,0 +1,11 @@
+http:
+  routers:
+    hello:
+      rule: Host(`hello.localhost`)
+      entryPoints: [internal]
+      service: hello
+  services:
+    hello:
+      loadBalancer:
+        servers:
+          - url: http://10.0.20.20:8099

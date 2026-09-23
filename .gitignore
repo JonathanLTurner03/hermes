@@ -1,9 +1,13 @@
-# Secrets
-.env
-*.env
-!*.env.example
+# Secrets -- .env is tracked (host/service compose config); .env.secrets
+# never is (out-of-band, per-host secrets -- see CLAUDE.md)
+.env.secrets
 secrets/*
 !secrets/.gitkeep
+
+# hc sync output (Traefik's file-provider watch dir) -- rendered
+# per-host symlinks, not tracked
+**/dynamic-enabled/*
+!**/dynamic-enabled/.gitkeep
 
 # Logs
 logs/

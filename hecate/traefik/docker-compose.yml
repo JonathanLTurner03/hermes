@@ -1,0 +1,24 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - --providers.file.directory=/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.internal.address=:8443
+    ports:
+      - "10.0.21.10:80:80"       # DMZ
+      - "10.0.20.10:8443:8443"   # SERVERS-facing, internal-only
+    volumes:
+      - ./dynamic-enabled:/dynamic:ro
+      # hc sync renders dynamic-enabled/*.yml as symlinks pointing at
+      # route.yml's real absolute path elsewhere in the registry clone
+      # (e.g. a different host's service directory) -- the container
+      # needs the whole registry visible at that SAME absolute path for
+      # those symlinks to resolve, not just dynamic-enabled/ itself.
+      - ${REGISTRY_PATH:-/opt/infra/hermes}:${REGISTRY_PATH:-/opt/infra/hermes}:ro
+    # No docker.sock mount (file provider only) and no TLS/ACME yet --
+    # this is the plain-HTTP hc sync connectivity smoke test. Add
+    # websecure + the cf cert resolver once routes round-trip correctly.
