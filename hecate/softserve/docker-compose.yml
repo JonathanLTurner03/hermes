@@ -1,0 +1,20 @@
+services:
+  soft-serve:
+    image: charmcli/soft-serve:latest
+    container_name: soft-serve
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "10.0.20.10:23231:23231"   # SSH -- clone/push, admin TUI
+      - "10.0.20.10:23232:23232"   # HTTP -- git-http, web UI
+      # No stats port (23233) -- it binds to the container's own loopback
+      # by default (SOFT_SERVE_STATS_LISTEN_ADDR), so publishing it does
+      # nothing; add SOFT_SERVE_STATS_LISTEN_ADDR=:23233 to .env and the
+      # mapping back here if metrics are ever actually needed externally.
+      # No 9418 (git:// daemon) -- that protocol has no authentication
+      # at all by design, which defeats the point of moving off GitHub
+      # for controlled access. Not publishing the port keeps it
+      # unreachable regardless of anon-access settings below.
+    volumes:
+      - ./data:/soft-serve

@@ -9,6 +9,10 @@ secrets/*
 **/dynamic-enabled/*
 !**/dynamic-enabled/.gitkeep
 
+# soft-serve's own repo/key/db storage -- runtime state, not tracked
+hecate/softserve/data/*
+!hecate/softserve/data/.gitkeep
+
 # Logs
 logs/
 *.log
