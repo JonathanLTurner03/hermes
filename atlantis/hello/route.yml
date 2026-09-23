@@ -1,7 +1,7 @@
 http:
   routers:
     hello:
-      rule: Host(`hello.localhost`)
+      rule: Host(`hello.test`)
       entryPoints: [internal]
       service: hello
   services:
